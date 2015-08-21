@@ -2,6 +2,8 @@
 import org.bson.Document;
 import java.util.ArrayList;
 
+import static java.util.Arrays.asList;
+
 /**
  *
  * ClusterAnalysis
@@ -50,6 +52,37 @@ public class Location {
         return location;
     }
 
+    public static Location findCenter(Location... args) {
+        // Adapted from http://stackoverflow.com/a/14231286
+        if (args.length == 1)
+            return args[0];
+
+        double x = 0;
+        double y = 0;
+        double z = 0;
+
+        for (Location location: args) {
+            double latitude = location.latitude * Math.PI / 180;
+            double longitude = location.longitude * Math.PI / 180;
+
+            x += Math.cos(latitude) * Math.cos(longitude);
+            y += Math.cos(latitude) * Math.sin(longitude);
+            z += Math.sin(latitude);
+        }
+
+        int total = args.length;
+
+        x = x / total;
+        y = y / total;
+        z = z / total;
+
+        double centralLongitude = Math.atan2(y, x);
+        double centralSquareRoot = Math.sqrt(x * x + y * y);
+        double centralLatitude = Math.atan2(z, centralSquareRoot);
+
+        return new Location(centralLatitude * 180 / Math.PI, centralLongitude * 180 / Math.PI);
+    }
+
     public Document toGeoJSON () {
         /*
         {
@@ -60,7 +93,7 @@ public class Location {
 
         Document geoJSON = new Document();
         geoJSON.append("type", "Point");
-        geoJSON.append("coordinates", new double[]{longitude, latitude});
+        geoJSON.append("coordinates", asList(longitude, latitude));
         return geoJSON;
     }
 

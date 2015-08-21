@@ -58,7 +58,7 @@ public class Tweet {
     public Tweet(Document document) {
         this.text = document.getString("text");
         this.timestamp = document.getInteger("timestamp");
-        this.id = document.getLong("id");
+        this.id = document.getLong("uuid");
         Object probability =  document.get("probability");
 
         if (probability instanceof Integer) {
@@ -80,7 +80,7 @@ public class Tweet {
         Document tweet = new Document();
         tweet.append("text", this.text);
         tweet.append("timestamp", this.timestamp);
-        tweet.append("id", this.id);
+        tweet.append("uuid", this.id);
         tweet.append("probability", this.propability);
         tweet.append("category", this.category.rawValue());
         tweet.append("location", this.location.toDocument());

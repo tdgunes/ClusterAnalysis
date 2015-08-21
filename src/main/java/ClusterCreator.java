@@ -5,7 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
-
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 /**
@@ -18,26 +18,33 @@ import java.util.ArrayList;
  *
  */
 
-public class ClusterCreator {
+public class ClusterCreator extends MongoAdaptor {
 
     //These are from M.Walther and M.Kaiser
     public static final int minimumTweetCount = 3; // x
-    public static final int lastYSeconds = 30 * 60; // y
-    public static final int onRadiusMeters = 200; // z
-    private MongoClient mongoClient = new MongoClient();
-    private MongoDatabase db = this.mongoClient.getDatabase("data");
-    private MongoDatabase analysisDatabase = this.mongoClient.getDatabase("analysis");
-    private MongoCollection<Document> eventCandidates = this.analysisDatabase.getCollection("EventCandidate");
-    private MongoCollection<Document> geocodedClean = this.db.getCollection("geocodedClean");
+    public static final int lastYSeconds =  30; // y
+    public static final int onRadiusMeters = 500; // z
 
     public static void main(String[] args) {
         ClusterCreator creator = new ClusterCreator();
+        creator.clear();
         creator.consumeAll();
+        creator.createIndexes();
+    }
+
+    public void clear(){
+        eventCandidates.drop();
+    }
+
+    public void createIndexes(){
+        eventCandidates.createIndex(new Document("count", 1));
+        eventCandidates.createIndex(new Document("center","2dsphere"));
+        eventCandidates.createIndex(new Document("uuid", 1));
     }
 
     public void consumeAll() {
         // get cursor from MongoDB and createEventCandidates
-        FindIterable<Document> iterable = this.geocodedClean.find().sort(new Document("timestamp", -1));
+        FindIterable<Document> iterable = this.geocodedClean.find().sort(new Document("timestamp", 1));
         iterable.forEach(new Block<Document>() {
 
              public void apply(final Document document) {
@@ -59,33 +66,43 @@ public class ClusterCreator {
     private void store(ArrayList<Tweet> tweets) {
         // make a MongoDB Query to store EventCandidates
         Cluster cluster = new Cluster(tweets);
+        System.out.println("["+ new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(tweets.get(tweets.size()-1).timestamp * 1000) + "] Saving a cluster with "+tweets.size()+" tweets.");
         this.eventCandidates.insertOne(cluster.toDocument());
     }
 
     private ArrayList<Tweet> fetchRelevantTweets(Tweet tweet) {
-        ArrayList<Tweet> tweets = new ArrayList<Tweet>();
-        System.out.println("> Preparing query:");
+        final ArrayList<Tweet> tweets = new ArrayList<Tweet>();
         Document query = this.prepareQuery(tweet);
+        MongoCursor cursor = geocodedClean.find(query).iterator();
 
-
-        System.out.println("> Getting cursor:");
-        MongoCursor<Document> cursor = geocodedClean.find(query).iterator();
-
-        System.out.println("> Iterating...");
         try {
             while (cursor.hasNext()) {
+                Tweet t = new Tweet((Document) cursor.next());
 
-                Document document = cursor.next();
-                tweets.add(new Tweet(document));
+                if (tweet.location.distanceToAsMeters(t.location) > 1.0) {
+                    boolean distinct = true;
+                    for (Tweet old:tweets) {
+                        if (old.text.equalsIgnoreCase(t.text)){
+                            distinct = false;
+                            break;
+                        }
+                    }
+                    if (distinct) {
+                        tweets.add(t);
+                    }
+
+                }
+
             }
         } finally {
             cursor.close();
         }
 
+
         return tweets;
     }
 
-    private Document prepareQuery(Tweet tweet){
+    private Document prepareQuery(Tweet tweet) {
         Document locationQuery = new Document();
         Document timestampQuery = new Document();
         Document nearQuery = new Document();
@@ -102,6 +119,4 @@ public class ClusterCreator {
 
         return finalQuery;
     }
-
-
 }
