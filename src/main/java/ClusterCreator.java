@@ -1,9 +1,6 @@
 import com.mongodb.Block;
-import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -88,7 +85,7 @@ public class ClusterCreator extends MongoAdaptor {
             while (cursor.hasNext()) {
                 Tweet t = new Tweet((Document) cursor.next());
 
-                if (tweet.propability > minimumProbability &&
+                if (tweet.probability > minimumProbability &&
                         tweet.location.distanceToAsMeters(t.location) > 1.0) {
                     boolean distinct = true;
                     for (Tweet old:tweets) {

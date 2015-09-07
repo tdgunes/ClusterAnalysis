@@ -1,3 +1,4 @@
+import org.apache.commons.math3.stat.correlation.Covariance;
 import org.bson.Document;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -24,6 +25,7 @@ public class Cluster {
     public String uuid;
     private final ArrayList<Tweet> tweets;
     private final HashSet<Long> tweetIDs = new HashSet<Long>();
+    double minX=Double.MAX_VALUE,minY=Double.MAX_VALUE, maxX,maxY;
 
     public Cluster(ArrayList<Tweet> tweets) {
         this.tweets = tweets;
@@ -104,8 +106,58 @@ public class Cluster {
         writer.close();
     }
 
-    //FIXME
-    public Tweet getNewestTweet() {
-        return null;
+    private void calculateMinMax() {
+        for (Tweet i: tweets) {
+            if(minX > i.location.getLongitude()) minX=i.location.getLongitude();
+            if(minY > i.location.getLatitude()) minY=i.location.getLatitude();
+            if(maxX < i.location.getLongitude()) maxX=i.location.getLongitude();
+            if(maxY < i.location.getLatitude()) maxY=i.location.getLatitude();
+        }
     }
+
+    public double[] getFeatures() {
+        this.calculateMinMax();
+        double[] f = new double[14];
+        f[0] = this.getTweets().size();
+        double mean[] = {0,0,0};
+        for (Tweet tweet : tweets) {
+            f[1] += tweet.probability;
+            mean[0] += tweet.location.getLongitude();
+            mean[1] += tweet.location.getLatitude();
+            mean[2] += tweet.timestamp;
+        }
+        f[2] = maxX-minX;
+        f[3] = maxY-minY;
+
+        int count = tweets.size();
+        if (count > 1) {
+            mean[0] /= count;
+            mean[1] /= count;
+            mean[2] /= count;
+            double data[][] = new double[count][3];
+            int i = 0;
+            for (Tweet tweet : tweets) {
+                data[i][0] = tweet.location.getLongitude() - mean[0];
+                data[i][1] = tweet.location.getLatitude() - mean[1];
+                data[i][2] = tweet.timestamp - mean[2];
+                i++;
+            }
+
+            Covariance covariance = new Covariance(data);
+            double cov[][] = covariance.getCovarianceMatrix().getData();
+            i=4;
+
+            for (int j = 0; j < 3; j++) {
+                for (int k = 0; k < 3; k++) {
+                    f[i] = cov[j][k];
+                    i++;
+                }
+            }
+
+
+        }
+        return f;
+
+    }
+
 }

@@ -1,4 +1,3 @@
-import org.bson.BsonDocument;
 import org.bson.Document;
 
 /**
@@ -50,7 +49,7 @@ public class Tweet {
 
     public final int timestamp;
     public final long id;
-    public final double propability;  // that this tweet belongs to (x,y)
+    public final double probability;  // that this tweet belongs to (x,y)
     public final Category category;
     public final Location location;
     public final String text;
@@ -63,14 +62,14 @@ public class Tweet {
 
         if (probability instanceof Integer) {
             Integer integer = (Integer) probability;
-            this.propability = (double) integer;
+            this.probability = (double) integer;
         }
         else if (probability instanceof Double) {
-            this.propability = (Double) probability;
+            this.probability = (Double) probability;
         }
         else {
             System.out.println("Unable load probability of tweet");
-            this.propability = 0;
+            this.probability = 0;
         }
         this.category = Category.find(document);
         this.location = new Location(document);
@@ -81,7 +80,7 @@ public class Tweet {
         tweet.append("text", this.text);
         tweet.append("timestamp", this.timestamp);
         tweet.append("id", this.id);
-        tweet.append("probability", this.propability);
+        tweet.append("probability", this.probability);
         tweet.append("category", this.category.rawValue());
         tweet.append("loc", this.location.toGeoJSON());
         return tweet;

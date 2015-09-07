@@ -17,4 +17,5 @@ public class MongoAdaptor {
     protected MongoCollection<Document> eventCandidates = this.analysisDatabase.getCollection("eventCandidate");
     protected MongoCollection<Document> eventClusters = this.analysisDatabase.getCollection("clusters");
     protected MongoCollection<Document> geocodedClean = this.db.getCollection("geocodedClean");
+
 }
