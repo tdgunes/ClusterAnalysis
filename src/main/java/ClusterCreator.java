@@ -24,7 +24,7 @@ public class ClusterCreator extends MongoAdaptor {
     //These are from M.Walther and M.Kaiser
     public static final int minimumTweetCount = 3; // x
     public static final int lastYSeconds =  30; // y
-    public static final int onRadiusMeters = 500; // z
+    public static final int onRadiusMeters = 1000; // z
     public static final double minimumProbability = 0.3;
 
     public static void main(String[] args) {

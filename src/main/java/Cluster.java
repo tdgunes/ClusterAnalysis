@@ -1,5 +1,11 @@
 import org.bson.Document;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
@@ -89,6 +95,13 @@ public class Cluster {
             timestamp += tweet.timestamp;
         }
         return timestamp / this.getCount();
+    }
+
+    public void save() throws FileNotFoundException, UnsupportedEncodingException {
+        String text = this.toDocument().toJson(new JsonWriterSettings(JsonMode.SHELL, true));
+        PrintWriter writer = new PrintWriter(getTimestamp()+"-"+ this.uuid.substring(0,20) +".txt", "UTF-8");
+        writer.println(text);
+        writer.close();
     }
 
     //FIXME

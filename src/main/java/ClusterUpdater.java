@@ -4,10 +4,13 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
 import org.bson.Document;
 
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.TreeMap;
 
 
 /**
@@ -21,16 +24,14 @@ import java.util.TimeZone;
 
 public class ClusterUpdater extends MongoAdaptor {
 
-    public final int operationIntervalSeconds = 5;
-    public final int thresholdDistanceMeters = 1000;
-    public final int maxNewestTweetLifespanSeconds = 48 * 60 * 60;
-    public final int maxTweetsPerCluster = 300; // n
-    public final int timeRangeOfMergeSeconds = 60 * 60 * 24 ;
-    public final int ITERATION = 30;
+    public final int thresholdDistanceMeters = 5000;
+    public final int timeRangeOfMergeSeconds = 60 * 60;
+
     public MongoCollection<Document> sourceCollection = null;
     public MongoCollection<Document> storageCollection = null;
 
-    public static void main(String[] args) throws InterruptedException {
+
+    public static void main(String[] args) throws InterruptedException, FileNotFoundException, UnsupportedEncodingException {
         ClusterUpdater updater = new ClusterUpdater();
         updater.clear();
         updater.start();
@@ -39,50 +40,49 @@ public class ClusterUpdater extends MongoAdaptor {
     public void clear() {
         System.out.println("Dropping clusters");
         this.eventClusters.drop();
-        for (int i = 1; i < ITERATION; i++) {
-            System.out.println("Dropping clusters " + i + ".");
-            this.analysisDatabase.getCollection("clusters" + i).drop();
-        }
-
     }
 
     public void createIndexes(MongoCollection<Document> collection){
         collection.createIndex(new Document("count", 1));
-        collection.createIndex(new Document("center", "2dsphere")); // FIXME: db.eventCandidates.createIndex( {"center": "2dsphere"} )
+        collection.createIndex(new Document("center", "2dsphere"));
         collection.createIndex(new Document("uuid", 1));
     }
 
-    public void start() throws InterruptedException {
+    public void start() throws InterruptedException, FileNotFoundException, UnsupportedEncodingException {
         // eventCandidates = gather all of the EventCandidates(Clusters) from database
         this.sourceCollection = this.eventCandidates;
         this.storageCollection = this.eventClusters;
         this.createIndexes(this.storageCollection);
 
-        MongoIterable<Document> iterable = this.sourceCollection.find().sort(new Document("timestamp", 1));
-        iterable.forEach(new Block<Document>() {
-            public void apply(Document document) {
-                process(document);
-            }
-        });
-
+        this.moveClusters();
         this.sourceCollection = this.eventClusters;
-        this.storageCollection = this.analysisDatabase.getCollection("clusters1");
-        this.createIndexes(this.storageCollection);
 
-        for (int i = 1; i < ITERATION; i++) {
-            System.out.println("Updating i = " + i + ".");
-
-            MongoCursor<Document> it = this.sourceCollection.find().sort(new Document("timestamp", 1)).iterator();
-            while (it.hasNext()) {
-                Document document = it.next();
-                process(document);
-            }
-
-            this.sourceCollection = this.analysisDatabase.getCollection("clusters" + i);
-            this.storageCollection = this.analysisDatabase.getCollection("clusters" + (i+1));
-            this.createIndexes(this.storageCollection);
+        MongoCursor<Document> it = this.sourceCollection.find().sort(new Document("timestamp", 1)).iterator();
+        while (it.hasNext()) {
+            Document document = it.next();
+            process(document);
         }
 
+
+        // after process
+        MongoCursor<Document> it2 = this.sourceCollection.find().sort(new Document("timestamp", 1)).iterator();
+        while (it2.hasNext()) {
+            Document document = it2.next();
+            Cluster cluster = new Cluster(document);
+            System.out.println("["+ new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format((long) cluster.getTimestamp() * 1000) + "] a cluster with "+ cluster.getTweets().size()+" tweets: " + cluster.uuid + " t: "+cluster.getTimestamp());
+
+        }
+
+    }
+
+    private void moveClusters() {
+        MongoCursor<Document> iterator = this.sourceCollection.find().iterator();
+
+        while (iterator.hasNext()) {
+            Document document = iterator.next();
+            Cluster cluster = new Cluster(document);
+            this.storageCollection.insertOne(cluster.toDocument());
+        }
 
     }
 
@@ -95,31 +95,24 @@ public class ClusterUpdater extends MongoAdaptor {
 
         if (clusters.size() > 0) {
             for (Cluster relevantCluster : clusters) {
-                if (this.combinable(cluster, relevantCluster)) {
-                    combinableClusters.add(relevantCluster);
-                }
+                combinableClusters.add(relevantCluster);
             }
             if (combinableClusters.size() > 0) {
                 Cluster combined = this.merge(cluster, combinableClusters);
-//                System.out.println("Reduced from "+ combinableClusters.size() + " to 1.");
                 this.store(combined);
+                for (Cluster combinableCluster : combinableClusters) {
+                    this.storageCollection.deleteOne(combinableCluster.toDocument());
+
+                }
             }
-        }
-        else {
-            this.store(cluster);
         }
     }
 
     private void store(Cluster combined) {
         System.out.println("["+ new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format((long) combined.getTimestamp() * 1000) + "] Saving a cluster with "+ combined.getTweets().size()+" tweets: " + combined.uuid);
-
         this.storageCollection.insertOne(combined.toDocument());
     }
 
-    private boolean combinable(Cluster cluster, Cluster relevantCluster) {
-        // from article, resulting cluster tweets must not exceed n limit
-        return cluster.getCount() + relevantCluster.getCount() <= maxTweetsPerCluster && Math.abs(cluster.getTimestamp() - relevantCluster.getTimestamp()) < timeRangeOfMergeSeconds;
-    }
 
     private ArrayList<Cluster> getPossibleCandidates(Cluster cluster) {
         Document query = this.prepareQuery(cluster);
