@@ -80,7 +80,7 @@ public class Location {
         double centralSquareRoot = Math.sqrt(x * x + y * y);
         double centralLatitude = Math.atan2(z, centralSquareRoot);
 
-        return new Location(centralLatitude * 180 / Math.PI, centralLongitude * 180 / Math.PI);
+        return new Location(centralLongitude * 180 / Math.PI, centralLatitude * 180 / Math.PI);
     }
 
     public Document toGeoJSON () {

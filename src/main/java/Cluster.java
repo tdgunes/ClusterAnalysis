@@ -1,6 +1,7 @@
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.UUID;
 
 /**
@@ -16,6 +17,7 @@ public class Cluster {
 
     public String uuid;
     private final ArrayList<Tweet> tweets;
+    private final HashSet<Long> tweetIDs = new HashSet<Long>();
 
     public Cluster(ArrayList<Tweet> tweets) {
         this.tweets = tweets;
@@ -42,7 +44,7 @@ public class Cluster {
         cluster.append("tweets", documents);
 
         // not stored, used for database queries
-        cluster.append("center", this.getCenter().toDocument());
+        cluster.append("center", this.getCenter().toGeoJSON());
         cluster.append("count", this.getCount());
         cluster.append("timestamp", this.getTimestamp());
 
@@ -54,7 +56,10 @@ public class Cluster {
     }
 
     public void addTweet(Tweet tweet) {
-        this.tweets.add(tweet);
+        if (!tweetIDs.contains(tweet.id)) {
+            tweetIDs.add(tweet.id);
+            this.tweets.add(tweet);
+        }
     }
 
     public ArrayList<Document> getTweetsAsDocuments() {

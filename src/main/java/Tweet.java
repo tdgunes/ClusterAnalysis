@@ -48,7 +48,7 @@ public class Tweet {
         }
     }
 
-    public final long timestamp;
+    public final int timestamp;
     public final long id;
     public final double propability;  // that this tweet belongs to (x,y)
     public final Category category;
@@ -58,7 +58,7 @@ public class Tweet {
     public Tweet(Document document) {
         this.text = document.getString("text");
         this.timestamp = document.getInteger("timestamp");
-        this.id = document.getLong("uuid");
+        this.id = document.getLong("id");
         Object probability =  document.get("probability");
 
         if (probability instanceof Integer) {
@@ -80,10 +80,10 @@ public class Tweet {
         Document tweet = new Document();
         tweet.append("text", this.text);
         tweet.append("timestamp", this.timestamp);
-        tweet.append("uuid", this.id);
+        tweet.append("id", this.id);
         tweet.append("probability", this.propability);
         tweet.append("category", this.category.rawValue());
-        tweet.append("location", this.location.toDocument());
+        tweet.append("loc", this.location.toGeoJSON());
         return tweet;
     }
 

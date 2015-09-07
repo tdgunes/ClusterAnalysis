@@ -7,6 +7,7 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 /**
  *
@@ -24,11 +25,19 @@ public class ClusterCreator extends MongoAdaptor {
     public static final int minimumTweetCount = 3; // x
     public static final int lastYSeconds =  30; // y
     public static final int onRadiusMeters = 500; // z
+    public static final double minimumProbability = 0.3;
 
     public static void main(String[] args) {
         ClusterCreator creator = new ClusterCreator();
+        System.out.println("Deleting previous analysis...");
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Clearing eventCandidate collection...");
+        scanner.nextLine();
+
         creator.clear();
         creator.consumeAll();
+        System.out.println("Indexing...");
         creator.createIndexes();
     }
 
@@ -38,7 +47,7 @@ public class ClusterCreator extends MongoAdaptor {
 
     public void createIndexes(){
         eventCandidates.createIndex(new Document("count", 1));
-        eventCandidates.createIndex(new Document("center","2dsphere"));
+        eventCandidates.createIndex(new Document("center","2dsphere")); // FIXME: db.eventCandidates.createIndex( {"center": "2dsphere"} )
         eventCandidates.createIndex(new Document("uuid", 1));
     }
 
@@ -66,7 +75,7 @@ public class ClusterCreator extends MongoAdaptor {
     private void store(ArrayList<Tweet> tweets) {
         // make a MongoDB Query to store EventCandidates
         Cluster cluster = new Cluster(tweets);
-        System.out.println("["+ new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(tweets.get(tweets.size()-1).timestamp * 1000) + "] Saving a cluster with "+tweets.size()+" tweets.");
+        System.out.println("["+ new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format((long) tweets.get(tweets.size()-1).timestamp * 1000) + "] Saving a cluster with "+tweets.size()+" tweets.");
         this.eventCandidates.insertOne(cluster.toDocument());
     }
 
@@ -79,7 +88,8 @@ public class ClusterCreator extends MongoAdaptor {
             while (cursor.hasNext()) {
                 Tweet t = new Tweet((Document) cursor.next());
 
-                if (tweet.location.distanceToAsMeters(t.location) > 1.0) {
+                if (tweet.propability > minimumProbability &&
+                        tweet.location.distanceToAsMeters(t.location) > 1.0) {
                     boolean distinct = true;
                     for (Tweet old:tweets) {
                         if (old.text.equalsIgnoreCase(t.text)){
