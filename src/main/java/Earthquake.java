@@ -19,7 +19,7 @@ import java.util.Comparator;
 public class Earthquake {
     public static final String[] COLLECTIONS = {"bgs","emsc","gdacs","geofon","geonet","usgs"};
     public static final int THRESHOLD_RADIUS_METERS = 100 * 1000;
-    public static final int TIME_RANGE_SECONDS = 60 * 60;
+    public static final int TIME_RANGE_SECONDS = 60 * 60 * 24;
 
     public final Location location;
     public final int timestamp;
@@ -78,7 +78,7 @@ public class Earthquake {
 
         if (!earthquakes.isEmpty()) {
             //getting biggest earthquake report from the list
-            Collections.sort(earthquakes, new Comparator<Earthquake>() {
+            Collections.sort(earthquakes, new Comparator<Earthquake>() { //FIXME: make priority here for timestamp later check magnitude
                 public int compare(Earthquake o1, Earthquake o2) {
                     return Double.compare(o1.magnitude, o2.magnitude);
                 }

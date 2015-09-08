@@ -5,6 +5,7 @@ import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * ClusterAnalysis
@@ -16,29 +17,36 @@ import java.util.ArrayList;
 
 public class Learner extends MongoAdaptor {
     Classifier classifier = new J48();
-    DataSet data = new DataSet();
+    DataSet train = new DataSet();
+    DataSet test = new DataSet();
 
 
     public Learner() throws Exception {
 
+
+        DataSet set = train;
         for(Document document: this.eventClusters.find().sort(new Document("timestamp", 1))) {
             Cluster cluster = new Cluster(document);
             Earthquake earthquake = Earthquake.getMostRelevantReport(cluster, this.mongoClient);
             if (earthquake != null) {
-                System.out.println("Label: "+earthquake.getLabel());
-                data.addData(cluster, "" + earthquake.getLabel());
-                System.out.println("C:"+earthquake.title);
+//                System.out.println("Label: "+earthquake.getLabel());
+                set.addData(cluster, "" + earthquake.getLabel());
+                System.out.println("C:"+earthquake.title +" uuid: "+cluster.uuid + " link:" + earthquake.link);
             }
             else {
-                data.addData(cluster, "0");
+                set.addData(cluster, "0");
             }
+
+
         }
 
-        classifier.buildClassifier(data.getInstances());
+        classifier.buildClassifier(train.getInstances());
 
-        Evaluation eval = new Evaluation(data.getInstances());
-        eval.evaluateModel(classifier, data.getInstances());
-        System.out.println(eval.toSummaryString("\nResults\n======\n", false));
+        Evaluation eval = new Evaluation(train.getInstances());
+        eval.crossValidateModel(classifier, train.getInstances(), 10, new Random(1));
+        System.out.println(eval.toSummaryString("\nResults\n======\n", true));
+
+        System.out.println(eval.toClassDetailsString());
     }
 
     public static void main(String args[]) throws Exception {
