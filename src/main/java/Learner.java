@@ -28,12 +28,13 @@ public class Learner extends MongoAdaptor {
             Cluster cluster = new Cluster(document);
             Earthquake earthquake = Earthquake.getMostRelevantReport(cluster, this.mongoClient);
             if (earthquake != null) {
+                System.out.println("Label "+ earthquake.getLabel());
                 set.addData(cluster, "" + earthquake.getLabel());
                 System.out.println("C:"+earthquake.title +" uuid: "+cluster.uuid + " link:" + earthquake.link);
             }
-            else {
-                set.addData(cluster, "0");
-            }
+//            else {
+//                set.addData(cluster, "0");
+//            }
 
 
         }

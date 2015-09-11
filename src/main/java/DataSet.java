@@ -27,7 +27,7 @@ public class DataSet {
 
         // Declare the class attribute along with its values
         FastVector fvClassVal = new FastVector(7);
-        fvClassVal.addElement("0");
+//        fvClassVal.addElement("0");
         fvClassVal.addElement("1");
         fvClassVal.addElement("2");
         fvClassVal.addElement("3");
