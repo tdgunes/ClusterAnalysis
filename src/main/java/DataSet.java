@@ -27,15 +27,15 @@ public class DataSet {
 
         // Declare the class attribute along with its values
         FastVector fvClassVal = new FastVector(7);
-//        fvClassVal.addElement("0");
+        fvClassVal.addElement("0");
         fvClassVal.addElement("1");
-        fvClassVal.addElement("2");
-        fvClassVal.addElement("3");
-        fvClassVal.addElement("4");
-        fvClassVal.addElement("5");
-        fvClassVal.addElement("6");
-        fvClassVal.addElement("7");
-        fvClassVal.addElement("8");
+//        fvClassVal.addElement("2");
+//        fvClassVal.addElement("3");
+//        fvClassVal.addElement("4");
+//        fvClassVal.addElement("5");
+//        fvClassVal.addElement("6");
+//        fvClassVal.addElement("7");
+//        fvClassVal.addElement("8");
         Attribute ClassAttribute = new Attribute("Mag", fvClassVal);
 
         // Declare the feature vector
