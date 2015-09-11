@@ -26,14 +26,14 @@ public class ClusterCreator extends MongoAdaptor {
 
     public static void main(String[] args) {
         ClusterCreator creator = new ClusterCreator();
-        System.out.println("Deleting previous analysis...");
-
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Clearing eventCandidate collection...");
-        scanner.nextLine();
-
-        creator.clear();
-        creator.consumeAll();
+//        System.out.println("Deleting previous analysis...");
+//
+//        Scanner scanner = new Scanner(System.in);
+//        System.out.println("Clearing eventCandidate collection... (press enter to continue)");
+//        scanner.nextLine();
+//
+//        creator.clear();
+//        creator.consumeAll();
         System.out.println("Indexing...");
         creator.createIndexes();
     }
@@ -46,6 +46,7 @@ public class ClusterCreator extends MongoAdaptor {
         eventCandidates.createIndex(new Document("count", 1));
         eventCandidates.createIndex(new Document("center","2dsphere")); // FIXME: db.eventCandidates.createIndex( {"center": "2dsphere"} )
         eventCandidates.createIndex(new Document("uuid", 1));
+        eventCandidates.createIndex(new Document("timestamp",1));
     }
 
     public void consumeAll() {

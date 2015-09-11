@@ -31,10 +31,30 @@ public class Location {
     }
 
     public Location(Document document) {
+        double latitude1 = 0;
+        double longitude1 = 0;
         Document location = (Document) document.get("loc");
         ArrayList coordinates = (ArrayList) location.get("coordinates");
-        this.longitude = (Double) coordinates.get(0);
-        this.latitude = (Double) coordinates.get(1);
+        if (coordinates.get(0) instanceof Double) {
+            longitude1 = (Double) coordinates.get(0);
+        }
+        if (coordinates.get(1) instanceof Double) {
+            latitude1 = (Double) coordinates.get(1);
+        }
+
+        if (coordinates.get(0) instanceof Integer) {
+            int coordinate = (Integer) coordinates.get(0);
+            longitude1 = (double) coordinate;
+        }
+
+        if (coordinates.get(1) instanceof Integer) {
+            int coordinate = (Integer) coordinates.get(1);
+            latitude1 = (double) coordinate;
+        }
+
+
+        this.latitude = latitude1;
+        this.longitude = longitude1;
     }
 
     public double distanceToAsMeters(Location location) {

@@ -4,7 +4,7 @@ import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
 
-import java.util.ArrayList;
+
 import java.util.Random;
 
 /**
@@ -18,7 +18,6 @@ import java.util.Random;
 public class Learner extends MongoAdaptor {
     Classifier classifier = new J48();
     DataSet train = new DataSet();
-    DataSet test = new DataSet();
 
 
     public Learner() throws Exception {
@@ -29,7 +28,6 @@ public class Learner extends MongoAdaptor {
             Cluster cluster = new Cluster(document);
             Earthquake earthquake = Earthquake.getMostRelevantReport(cluster, this.mongoClient);
             if (earthquake != null) {
-//                System.out.println("Label: "+earthquake.getLabel());
                 set.addData(cluster, "" + earthquake.getLabel());
                 System.out.println("C:"+earthquake.title +" uuid: "+cluster.uuid + " link:" + earthquake.link);
             }
@@ -47,6 +45,7 @@ public class Learner extends MongoAdaptor {
         System.out.println(eval.toSummaryString("\nResults\n======\n", true));
 
         System.out.println(eval.toClassDetailsString());
+        System.out.println(eval.toMatrixString());
     }
 
     public static void main(String args[]) throws Exception {

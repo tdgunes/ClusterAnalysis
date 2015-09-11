@@ -20,6 +20,9 @@ import java.util.TreeMap;
  * Created by Taha Doğan Güneş on 20/08/15.
  * Copyright (c) 2015. All rights reserved.
  *
+ * > db.adminCommand({setParameter: 1, internalQueryExecMaxBlockingSortBytes: 63554432})
+ { "was" : 33554432, "ok" : 1 }
+ *
  */
 
 public class ClusterUpdater extends MongoAdaptor {
@@ -46,6 +49,7 @@ public class ClusterUpdater extends MongoAdaptor {
         collection.createIndex(new Document("count", 1));
         collection.createIndex(new Document("center", "2dsphere"));
         collection.createIndex(new Document("uuid", 1));
+        collection.createIndex(new Document("timestamp",1));
     }
 
     public void start() throws InterruptedException, FileNotFoundException, UnsupportedEncodingException {
